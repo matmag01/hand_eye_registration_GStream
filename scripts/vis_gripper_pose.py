@@ -31,14 +31,13 @@ from camera import gst_to_opencv, load_calibration, make_pipeline
 @dataclass
 class ImageSubscriber:
     yaml_file: str
-    device_number: int = 0
+    device_number: int = 1
     current_frame: numpy.ndarray = field(default=None, init=False)
     camera_matrix: numpy.ndarray = field(default=None, init=False)
 
     def __post_init__(self):
         self.cam = CameraGst(device_number=self.device_number, yaml_file=self.yaml_file)
         self.camera_matrix = self.cam.proj_matrix[:, :3]
-        print("Camera matrix:\n", self.camera_matrix)
 
     def wait_until_first_frame(self):
         print("Waiting for camera frame...")
@@ -80,12 +79,11 @@ class PoseAnnotator:
         points_2d, _ = cv2.projectPoints(
             points_3d, rvec, tvec, self.camera_matrix, self.dist_coeffs
         )
-        print(f"camera matrix: {self.camera_matrix}")
         points_2d = tuple(points_2d.astype(numpy.int32)[0, 0])
 
         img = cv2.circle(img, points_2d, 10, (0, 0, 255), -1)
         img = self.draw_axis(img, self.camera_matrix, self.dist_coeffs, pose, size=0.01)
-
+        print(self.camera_matrix)
         return img
 
     def draw_axis(
@@ -134,7 +132,7 @@ class PoseAnnotator:
 
 def run_pose_visualizer(arm_handle, yaml_file: str, cam_T_robot_base: numpy.ndarray):
 
-    img_subscriber = ImageSubscriber(yaml_file=yaml_file, device_number=0)
+    img_subscriber = ImageSubscriber(yaml_file=yaml_file, device_number=1)
     img_subscriber.wait_until_first_frame()
 
     pose_annotator = PoseAnnotator(img_subscriber.camera_matrix, cam_T_robot_base)

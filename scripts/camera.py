@@ -156,68 +156,46 @@ class Camera:
         transforms = np.array(transforms)
 
         error = np.std(transforms - np.mean(transforms))
+        
         """
         robot_poses: lista di (R, t) per base→ee
         target_poses: lista di (R, t) per cam→marker
         """
 
-        robot_poses_r = np.array([p[0] for p in robot_poses], dtype=np.float64)
-        robot_poses_t = np.array([p[1] for p in robot_poses], dtype=np.float64)
-        target_poses_r = np.array([p[0] for p in target_poses], dtype=np.float64)
-        target_poses_t = np.array([p[1] for p in target_poses], dtype=np.float64)
+        X = to_homogenous(rotation, translation)
 
-        # OpenCV: restituisce camera → gripper (end-effector)
-        R_cam2ee, t_cam2ee = cv2.calibrateHandEye(
-            robot_poses_r,
-            robot_poses_t,
-            target_poses_r,
-            target_poses_t,
-            method=cv2.CALIB_HAND_EYE_HORAUD,
-        )
+        errors_rot = []
+        errors_trans = []
 
-        def to_homogenous(R, t):
-            X = np.eye(4)
-            X[0:3, 0:3] = R
-            X[0:3, 3] = t.reshape((3,))
-            return X
+        # Calcola errori sui movimenti relativi
+        for i in range(len(robot_poses) - 1):
+            # Robot relative motion A_i
+            R1, t1 = robot_poses[i]
+            R2, t2 = robot_poses[i + 1]
+            A = np.linalg.inv(to_homogenous(R1, t1)) @ to_homogenous(R2, t2)
 
-        T_cam2ee = to_homogenous(R_cam2ee, t_cam2ee)
-        T_ee2cam = np.linalg.inv(T_cam2ee)
+            # Target relative motion B_i
+            R1, t1 = target_poses[i]
+            R2, t2 = target_poses[i + 1]
+            B = np.linalg.inv(to_homogenous(R1, t1)) @ to_homogenous(R2, t2)
 
-        # --- valutazione ---
-        errors_t = []
-        errors_r = []
+            # Verifica A*X ≈ X*B
+            left = A @ X
+            right = X @ B
 
-        for r, t, rt, tt in zip(robot_poses_r, robot_poses_t, target_poses_r, target_poses_t):
-            A = to_homogenous(r, t)    # base→ee
-            B = to_homogenous(rt, tt)  # cam→marker
-
-            # Predizione con la relazione: A * X = X * B
-            pred = A @ T_ee2cam        # base→cam stimata
-            obs = np.linalg.inv(B)     # marker→cam → cam→marker^-1 (dipende dalla tua convenzione!)
-
-            # confrontiamo traslazioni
-            err_t = np.linalg.norm(pred[0:3, 3] - obs[0:3, 3])
-            errors_t.append(err_t)
-
-            # confrontiamo rotazioni
-            R_err = pred[0:3, 0:3] @ obs[0:3, 0:3].T
+            # Errore rotazionale (in gradi)
+            R_err = left[:3, :3] @ right[:3, :3].T
             angle = np.arccos(np.clip((np.trace(R_err) - 1) / 2, -1, 1))
-            err_r = np.degrees(angle)
-            errors_r.append(err_r)
+            errors_rot.append(np.degrees(angle))
 
-        mean_t = np.mean(errors_t)
-        std_t = np.std(errors_t)
-        mean_r = np.mean(errors_r)
-        std_r = np.std(errors_r)
+            # Errore traslazionale (in metri se i tuoi dati sono in m)
+            t_err = np.linalg.norm(left[:3, 3] - right[:3, 3])
+            errors_trans.append(t_err)
 
-        print("=== Hand-Eye Calibration Results ===")
-        print("T_cam2ee:\n", T_cam2ee)
-        print("T_ee2cam:\n", T_ee2cam)
-        print(f"Translation error: {mean_t:.4f} ± {std_t:.4f} m")
-        print(f"Rotation error:    {mean_r:.2f} ± {std_r:.2f} deg")
-
-
+        mean_rot_error = np.mean(errors_rot)
+        mean_trans_error = np.mean(errors_trans)
+        print('Reprojection error (trans): ', mean_trans_error)
+        print('Reprojection error (rot): ', mean_rot_error)
 
         return error, rotation, translation
     

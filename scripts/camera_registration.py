@@ -433,7 +433,7 @@ def main():
     parser.add_argument(
         "-d", "--device_number",
         type=int,
-        default=0,
+        default=1,
         help="Indice della webcam / device GStreamer"
     )
     parser.add_argument(
