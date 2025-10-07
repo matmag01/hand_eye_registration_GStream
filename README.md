@@ -17,4 +17,5 @@ python vis_gripper_pose.py -p  *PSM Numeber* -H *Path for result of calibration*
 ```
 ## Credits
 This project is based on [original repository](https://github.com/jhu-dvrk/dvrk_camera_registration)
+
 Modifications by Matteo Magnani (2025).
