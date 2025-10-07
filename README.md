@@ -1,5 +1,5 @@
 # hand_eye_registration_GStream
-This project allows you to perform an hand eye calibration of a daVinci Research Kit, without using ROS. It is based on the project (dVRK hand-eye calibration package)[https://github.com/jhu-dvrk/dvrk_camera_registration].
+This project allows you to perform an hand eye calibration of a daVinci Research Kit, without using ROS. It is based on the project [dVRK hand-eye calibration package](https://github.com/jhu-dvrk/dvrk_camera_registration).
 
 ## USAGE 
 Activate a console
