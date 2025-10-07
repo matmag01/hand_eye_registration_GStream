@@ -6,7 +6,7 @@ Activate a console
 ```
 rosrun dvrk_robot dvrk_console_json -j ~/catkin_ws/devel/share/jhu-daVinci/console-SUJFixed-ECM-PSM1-PSM2.json
 ```
-After placing an ArUco marker on one PSM of a dVRK, 
+After placing an ArUco marker on one PSM of a dVRK,
 ```
 python camera_registration.py -p *PSM Numeber* -m *ArUco dimension* -d *Camera ID* -c *Path for camera parameters (YAML File)*
 ```
